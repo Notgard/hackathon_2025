@@ -1,0 +1,17 @@
+#!/bin/bash
+#SBATCH --job-name=heavy_slurm_job        # Nom du job
+#SBATCH --output=heavy_slurm_job.out      # Fichier de sortie
+#SBATCH --error=heavy_slurm_job.err       # Fichier pour les erreurs
+#SBATCH --partition=c8g             # Partition à utiliser
+#SBATCH --nodes=1                   # Nombre de noeuds (1 dans ce cas)
+#SBATCH --ntasks-per-node=96        # Nombre de tâches (cœurs) par nœud
+#SBATCH --nodelist=c8g-st-c8g-24xlarge-1  # Liste de nœuds
+#SBATCH --time=12:00:00             # Temps maximal d'exécution (HH:MM:SS)
+#SBATCH --exclusive                 # Réserver le nœud exclusivement pour ce job
+
+# Charger les modules nécessaires
+module use /tools/acfl/24.10/modulefiles/
+module load gnu/14.2.0
+
+# Exécuter le script
+./heavy_tests.sh

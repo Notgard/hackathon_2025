@@ -1,0 +1,72 @@
+# Base image with Debian 11
+FROM debian:11
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PREREQ_PATH=/opt/aster
+ENV CODE_ASTER_PATH=/root/dev/codeaster
+ENV PATH=/opt/venv/bin:${PATH}
+
+# Update and install dependencies
+RUN apt-get update && apt-get install -y \
+    git cmake bison flex tk swig gcc g++ gfortran libopenblas-dev \
+    zlib1g-dev libxml2-dev libopenmpi-dev python3-dev python3-scipy cython3 \
+    libboost-python-dev libboost-filesystem-dev libboost-regex-dev \
+    libboost-system-dev libboost-thread-dev libboost-date-time-dev \
+    libboost-chrono-dev libboost-serialization-dev libatlas-base-dev metis \
+    libmetis-dev libmetis5 wget vim python3-venv python3-pip graphviz imagemagick \
+    valgrind locales aspell aspell-fr net-tools lmod nano mercurial procps \
+    pkg-config && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Setup locales
+RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen
+
+# Create a virtual environment
+RUN python3 -m venv --system-site-packages /opt/venv && \
+    python3 -m pip install --upgrade pip cython
+
+# Install additional Python dependencies
+RUN python3 -m pip install mpi4py PyYAML
+
+# Download and extract Code_Aster prerequisites
+WORKDIR /root
+RUN mkdir -p $PREREQ_PATH && \
+    wget https://www.code-aster.org/FICHIERS/prerequisites/codeaster-prerequisites-20240327-oss.tar.gz && \
+    tar xzf codeaster-prerequisites-20240327-oss.tar.gz && \
+    rm codeaster-prerequisites-20240327-oss.tar.gz
+
+# Modify installation scripts
+WORKDIR /root/codeaster-prerequisites-20240327-oss
+RUN sed -i '49a -DCMAKE_CXX_FLAGS="-Wno-narrowing" \\' src/medcoupling.sh && \
+    sed -i "32a sed -i 's/-mcmodel=medium/-mcmodel=small/g' src/Makefile.inc" src/miss3d.sh && \
+    sed -i '105,106s/^#//' src/mumps.sh
+
+# Build Code_Aster prerequisites
+RUN make ROOT=$PREREQ_PATH ARCH=gcc10-openblas-ompi4 RESTRICTED=0
+
+# Clone and configure Code_Aster
+WORKDIR /root
+RUN mkdir -p $CODE_ASTER_PATH && cd $CODE_ASTER_PATH && \
+    git clone https://gitlab.com/codeaster/src.git .
+#RUN cat $PREREQ_PATH/*/*/*_mpi.sh
+#RUN pwd && cd $CODE_ASTER_PATH/src && ./configure --prefix=$PREREQ_PATH/install/mpi
+
+# Build Code_Aster
+WORKDIR $CODE_ASTER_PATH
+#RUN make
+RUN /bin/bash -c "source $PREREQ_PATH/*/*/*_mpi.sh && ./configure --prefix=$PREREQ_PATH/install/mpi && make"
+
+# Add symbolic links for as_run and astk
+RUN ln -s $PREREQ_PATH/install/mpi/bin/as_run /usr/local/bin/as_run && \
+    ln -s $PREREQ_PATH/install/mpi/bin/astk /usr/local/bin/astk
+
+# Clean up temporary files
+RUN rm -rf /root/codeaster-prerequisites-20240327-oss
+
+# Set up user environment
+RUN useradd -ms /bin/bash user
+USER user
+WORKDIR /home/user
+
+CMD ["bash", "-c", "source $PREREQ_PATH/*/*/*_mpi.sh"]
+
