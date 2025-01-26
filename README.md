@@ -99,7 +99,7 @@ Note: First make sure to load the armpl module (source the setup_env.sh script)
 7. **Compilation line for the ARM version with XSIMD**
 Note: First make sure to load the armpl module (source the setup_env.sh script)
 ```bash
-   g++ -std=c++20 -march=armv8-a -mcpu=native -DREAL="float" -I/opt/arm/armpl/include -larmpl_lp64 -larmpl -Wall -O3 -flto -ffast-math -funroll-loops -fomit-frame-pointer -ftree-vectorize -fopenmp -o BSM_XSIMD_ARM BSM_XSIMD_ARM.cxx -I$HOME/xsimd/include -L/tools/acfl/24.10/gcc-14.2.0_AmazonLinux-2/lib64 -Wl,-rpath,/tools/acfl/24.10/gcc-14.2.0_AmazonLinux-2/lib64
+   g++ -std=c++20 -march=armv8-a -mcpu=native -DREAL="float" -I/opt/arm/armpl/include -larmpl_lp64 -larmpl -Wall -O3 -flto -ffast-math -funroll-loops -fomit-frame-pointer -ftree-vectorize -fopenmp -o BSM_XSIMD_ARM BSM_XSIMD_ARM.cxx -I$HOME/xsimd/include
    ```
    
 ### Notes for compilation
